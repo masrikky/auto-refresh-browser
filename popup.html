@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Auto Refresh Browser</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="container">
+
+    <!-- Header -->
+    <header class="header">
+      <div class="header-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z" fill="currentColor"/>
+        </svg>
+      </div>
+      <div class="header-text">
+        <h1 class="title">Auto Refresh</h1>
+        <p class="subtitle">Keep your sessions alive</p>
+      </div>
+      <div class="status-dot" id="statusDot"></div>
+    </header>
+
+    <!-- Quick Select -->
+    <section class="section">
+      <label class="section-label">Quick Select</label>
+      <div class="quick-select" id="quickSelect">
+        <button class="quick-btn" data-seconds="30" id="btn30s">30s</button>
+        <button class="quick-btn" data-seconds="60" id="btn60s">1m</button>
+        <button class="quick-btn" data-seconds="300" id="btn5m">5m</button>
+        <button class="quick-btn" data-seconds="600" id="btn10m">10m</button>
+      </div>
+    </section>
+
+    <!-- Custom Interval -->
+    <section class="section">
+      <label class="section-label">Custom Interval</label>
+      <div class="custom-input-row">
+        <input
+          type="number"
+          id="customValue"
+          class="custom-input"
+          min="1"
+          max="9999"
+          placeholder="Enter value"
+        />
+        <div class="unit-toggle" id="unitToggle">
+          <button class="unit-btn active" data-unit="seconds" id="unitSec">sec</button>
+          <button class="unit-btn" data-unit="minutes" id="unitMin">min</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Mode Toggle -->
+    <section class="section">
+      <label class="section-label">Refresh Mode</label>
+      <div class="mode-toggle" id="modeToggle">
+        <button class="mode-btn active" data-mode="current" id="modeCurrent">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 18h12v-2H3v2zm0-5h12v-2H3v2zm0-7v2h12V6H3zm14 9.5L22.5 12 17 8.5v9z"/></svg>
+          Current Tab
+        </button>
+        <button class="mode-btn" data-mode="all" id="modeAll">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h18V4H4c-1.1 0-2 .9-2 2v11H0v3h14v-3H4V6zm19 2h-6c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h6c.55 0 1-.45 1-1V9c0-.55-.45-1-1-1zm-1 9h-4v-7h4v7z"/></svg>
+          All Tabs
+        </button>
+      </div>
+    </section>
+
+    <!-- Countdown Display -->
+    <div class="countdown-display" id="countdownDisplay">
+      <div class="countdown-ring">
+        <svg class="ring-svg" viewBox="0 0 80 80">
+          <circle class="ring-track" cx="40" cy="40" r="34"/>
+          <circle class="ring-fill" id="ringFill" cx="40" cy="40" r="34"/>
+        </svg>
+        <div class="countdown-inner">
+          <span class="countdown-number" id="countdownNumber">--</span>
+          <span class="countdown-unit" id="countdownUnit">sec</span>
+        </div>
+      </div>
+      <p class="countdown-label" id="countdownLabel">Not running</p>
+    </div>
+
+    <!-- Action Button -->
+    <button class="action-btn" id="actionBtn">
+      <span id="actionBtnIcon">▶</span>
+      <span id="actionBtnText">Start Refresh</span>
+    </button>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <span id="lastRefreshed">Never refreshed</span>
+    </footer>
+
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
