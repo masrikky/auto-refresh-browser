@@ -121,6 +121,12 @@ body::before {
   animation: pulse 2s ease infinite;
 }
 
+.status-dot.paused {
+  background: #f59e0b;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+  animation: pulse 1.2s ease infinite;
+}
+
 @keyframes pulse {
 
   0%,
@@ -281,6 +287,60 @@ body::before {
   background: rgba(79, 163, 224, 0.1);
 }
 
+/* ── Options Row (skip-active toggle) ── */
+.options-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+}
+
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  user-select: none;
+  cursor: pointer;
+}
+
+.pill-toggle {
+  position: relative;
+  width: 34px;
+  height: 18px;
+  border-radius: 9px;
+  border: none;
+  background: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.25s ease;
+  flex-shrink: 0;
+}
+
+.pill-toggle.on {
+  background: var(--accent);
+}
+
+.pill-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.25s ease;
+  pointer-events: none;
+}
+
+.pill-toggle.on .pill-knob {
+  transform: translateX(16px);
+}
+
 /* ── Countdown Ring ── */
 .countdown-display {
   display: flex;
@@ -354,43 +414,72 @@ body::before {
   color: var(--text-secondary);
 }
 
+/* ── Action Row ── */
+.action-row {
+  display: flex;
+  gap: 8px;
+}
+
+.hidden {
+  display: none !important;
+}
+
 /* ── Action Button ── */
 .action-btn {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  width: 100%;
+  flex: 1;
   padding: 11px;
   border: none;
   border-radius: var(--radius-md);
-  background: linear-gradient(135deg, var(--accent), var(--accent-stop));
   color: #fff;
   font-family: inherit;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   cursor: pointer;
   transition: var(--transition);
   letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+
+.action-start,
+.action-resume {
+  background: linear-gradient(135deg, var(--accent), var(--accent-stop));
   box-shadow: 0 4px 20px var(--accent-glow);
 }
 
-.action-btn:hover {
+.action-start:hover,
+.action-resume:hover {
   transform: translateY(-1px);
   box-shadow: 0 6px 24px rgba(79, 163, 224, 0.45);
 }
 
-.action-btn:active {
-  transform: translateY(0);
+.action-pause {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  color: #f59e0b;
+  box-shadow: none;
 }
 
-.action-btn.running {
+.action-pause:hover {
+  background: rgba(245, 158, 11, 0.25);
+  transform: translateY(-1px);
+}
+
+.action-stop {
   background: linear-gradient(135deg, #f87171, #fb923c);
   box-shadow: 0 4px 20px rgba(248, 113, 113, 0.3);
 }
 
-.action-btn.running:hover {
+.action-stop:hover {
+  transform: translateY(-1px);
   box-shadow: 0 6px 24px rgba(248, 113, 113, 0.45);
+}
+
+.action-btn:active {
+  transform: translateY(0) !important;
 }
 
 /* ── Footer ── */

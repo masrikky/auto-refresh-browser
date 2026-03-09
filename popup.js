@@ -1,7 +1,6 @@
 /**
- * popup.js — Popup Controller
- * Manages UI state, communicates with the background service worker,
- * and drives the live countdown ring animation.
+ * popup.js — Popup Controller (v1.1.0)
+ * Handles badge, pause/resume, skip-active-tab, and live countdown ring.
  */
 
 // ─────────────────────────────────────────────
@@ -16,16 +15,22 @@ const countdownNumber = document.getElementById("countdownNumber");
 const countdownUnit = document.getElementById("countdownUnit");
 const countdownLabel = document.getElementById("countdownLabel");
 const ringFill = document.getElementById("ringFill");
-const actionBtn = document.getElementById("actionBtn");
-const actionBtnIcon = document.getElementById("actionBtnIcon");
-const actionBtnText = document.getElementById("actionBtnText");
 const lastRefreshed = document.getElementById("lastRefreshed");
 
-// Ring circumference (2π × r where r=34)
+// Action buttons
+const btnStart = document.getElementById("btnStart");
+const btnPause = document.getElementById("btnPause");
+const btnStop = document.getElementById("btnStop");
+const btnResume = document.getElementById("btnResume");
+
+// Skip active tab toggle
+const skipActiveToggle = document.getElementById("skipActiveToggle");
+
+// Ring circumference (2π × 34)
 const RING_CIRCUMFERENCE = 213.63;
 
 // ─────────────────────────────────────────────
-//  Inject SVG gradient definition into the ring
+//  SVG gradient
 // ─────────────────────────────────────────────
 (function injectRingGradient() {
     const svg = document.querySelector(".ring-svg");
@@ -34,55 +39,72 @@ const RING_CIRCUMFERENCE = 213.63;
     <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#4fa3e0"/>
       <stop offset="100%" stop-color="#7b61ff"/>
-    </linearGradient>
-  `;
+    </linearGradient>`;
     svg.prepend(defs);
-
-    // Apply gradient stroke reference
     ringFill.setAttribute("stroke", "url(#ringGradient)");
 })();
 
 // ─────────────────────────────────────────────
 //  State
 // ─────────────────────────────────────────────
-let selectedSeconds = 30;   // currently selected interval in seconds
+let selectedSeconds = 30;
 let selectedUnit = "seconds";
 let selectedMode = "current";
-let countdownTimer = null; // setInterval for live countdown
+let skipActive = false;
+let countdownTimer = null;
 
 // ─────────────────────────────────────────────
-//  Initialise popup from persisted storage
+//  Init from persisted state
 // ─────────────────────────────────────────────
 chrome.runtime.sendMessage({ action: "getState" }, (state) => {
-    if (chrome.runtime.lastError) return;
+    if (chrome.runtime.lastError || !state) return;
 
-    if (state?.isRunning) {
-        selectedSeconds = state.intervalSeconds ?? 30;
-        selectedMode = state.mode ?? "current";
+    // Restore interval selection
+    if (state.intervalSeconds) {
+        selectedSeconds = state.intervalSeconds;
+        highlightQuickBtn(selectedSeconds);
+    }
+
+    // Restore mode
+    if (state.mode) {
+        selectedMode = state.mode;
         syncModeButtons(selectedMode);
-        setRunningUI(true, state.startedAt, state.intervalSeconds);
     }
 
-    if (state?.lastRefreshedAt) {
-        updateLastRefreshed(state.lastRefreshedAt);
+    // Restore skip-active toggle
+    skipActive = state.skipActive ?? false;
+    updateSkipToggleUI(skipActive);
+
+    // Restore running/paused UI
+    if (state.isRunning && state.isPaused) {
+        setUIState("paused", state.pausedRemaining, state.intervalSeconds);
+    } else if (state.isRunning) {
+        setUIState("running", state.startedAt, state.intervalSeconds);
     }
+
+    if (state.lastRefreshedAt) updateLastRefreshed(state.lastRefreshedAt);
 });
 
 // ─────────────────────────────────────────────
-//  Quick Select Buttons
+//  Quick Select
 // ─────────────────────────────────────────────
 quickBtns.forEach((btn) => {
     btn.addEventListener("click", () => {
-        const sec = parseInt(btn.dataset.seconds, 10);
-        setSelectedInterval(sec);
+        selectedSeconds = parseInt(btn.dataset.seconds, 10);
         quickBtns.forEach((b) => b.classList.remove("selected"));
         btn.classList.add("selected");
         customValueEl.value = "";
     });
 });
 
-// Default highlight first button
+// Default highlight
 document.getElementById("btn30s").classList.add("selected");
+
+function highlightQuickBtn(sec) {
+    quickBtns.forEach((b) => {
+        b.classList.toggle("selected", parseInt(b.dataset.seconds, 10) === sec);
+    });
+}
 
 // ─────────────────────────────────────────────
 //  Unit Toggle
@@ -100,7 +122,6 @@ unitBtns.forEach((btn) => {
 //  Custom Input
 // ─────────────────────────────────────────────
 customValueEl.addEventListener("input", () => {
-    // Deselect quick buttons when typing
     quickBtns.forEach((b) => b.classList.remove("selected"));
     applyCustomInput();
 });
@@ -108,12 +129,11 @@ customValueEl.addEventListener("input", () => {
 function applyCustomInput() {
     const raw = parseFloat(customValueEl.value);
     if (!raw || isNaN(raw) || raw <= 0) return;
-    const sec = selectedUnit === "minutes" ? raw * 60 : raw;
-    setSelectedInterval(Math.round(sec));
+    selectedSeconds = Math.round(selectedUnit === "minutes" ? raw * 60 : raw);
 }
 
 // ─────────────────────────────────────────────
-//  Mode Buttons
+//  Mode Toggle
 // ─────────────────────────────────────────────
 modeBtns.forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -123,63 +143,109 @@ modeBtns.forEach((btn) => {
 });
 
 function syncModeButtons(mode) {
-    modeBtns.forEach((b) => {
-        b.classList.toggle("active", b.dataset.mode === mode);
-    });
+    modeBtns.forEach((b) => b.classList.toggle("active", b.dataset.mode === mode));
 }
 
 // ─────────────────────────────────────────────
-//  Action Button
+//  Skip Active Tab Toggle
 // ─────────────────────────────────────────────
-actionBtn.addEventListener("click", () => {
-    if (actionBtn.classList.contains("running")) {
-        stopRefresh();
-    } else {
-        startRefresh();
-    }
+skipActiveToggle.addEventListener("click", () => {
+    skipActive = !skipActive;
+    updateSkipToggleUI(skipActive);
+    chrome.runtime.sendMessage({ action: "setSkipActive", value: skipActive });
 });
 
-function startRefresh() {
+function updateSkipToggleUI(active) {
+    skipActiveToggle.setAttribute("aria-checked", String(active));
+    skipActiveToggle.classList.toggle("on", active);
+}
+
+// ─────────────────────────────────────────────
+//  Action Buttons
+// ─────────────────────────────────────────────
+btnStart.addEventListener("click", () => {
     if (!selectedSeconds || selectedSeconds < 1) {
         customValueEl.focus();
         customValueEl.style.borderColor = "#f87171";
         setTimeout(() => { customValueEl.style.borderColor = ""; }, 1500);
         return;
     }
-
     chrome.runtime.sendMessage(
-        { action: "start", intervalSeconds: selectedSeconds, mode: selectedMode },
-        () => {
-            if (chrome.runtime.lastError) return;
-            setRunningUI(true, Date.now(), selectedSeconds);
-        }
+        { action: "start", intervalSeconds: selectedSeconds, mode: selectedMode, skipActive },
+        () => setUIState("running", Date.now(), selectedSeconds)
     );
-}
+});
 
-function stopRefresh() {
-    chrome.runtime.sendMessage({ action: "stop" }, () => {
-        setRunningUI(false);
+btnPause.addEventListener("click", () => {
+    chrome.runtime.sendMessage({ action: "pause" }, () => {
+        // Snapshot remaining time from the current countdown for display
+        const elapsed = (Date.now() - currentStartedAt) / 1000;
+        const cyclePos = elapsed % currentInterval;
+        const remaining = currentInterval - cyclePos;
+        setUIState("paused", remaining, currentInterval);
     });
-}
+});
+
+btnResume.addEventListener("click", () => {
+    chrome.runtime.sendMessage({ action: "resume" }, () => {
+        // background adjusts startedAt; recalculate for popup
+        chrome.storage.local.get(["startedAt", "intervalSeconds"], (data) => {
+            setUIState("running", data.startedAt, data.intervalSeconds);
+        });
+    });
+});
+
+btnStop.addEventListener("click", () => {
+    chrome.runtime.sendMessage({ action: "stop" }, () => setUIState("stopped"));
+});
+
+// Track current countdown params for pause snapshot
+let currentStartedAt = null;
+let currentInterval = null;
 
 // ─────────────────────────────────────────────
-//  UI State Control
+//  UI State Machine
 // ─────────────────────────────────────────────
-function setRunningUI(running, startedAt, intervalSec) {
-    if (running) {
-        actionBtn.classList.add("running");
-        actionBtnIcon.textContent = "■";
-        actionBtnText.textContent = "Stop Refresh";
-        statusDot.classList.add("active");
+/**
+ * @param {"stopped"|"running"|"paused"} state
+ * @param {number|null} param  startedAt (running) | pausedRemaining seconds (paused)
+ * @param {number|null} intervalSec
+ */
+function setUIState(state, param, intervalSec) {
+    // Reset buttons
+    btnStart.classList.add("hidden");
+    btnPause.classList.add("hidden");
+    btnStop.classList.add("hidden");
+    btnResume.classList.add("hidden");
+
+    stopCountdown();
+
+    if (state === "running") {
+        btnPause.classList.remove("hidden");
+        btnStop.classList.remove("hidden");
+        statusDot.className = "status-dot active";
         countdownLabel.textContent = selectedMode === "all" ? "Refreshing all tabs" : "Refreshing current tab";
-        startCountdown(startedAt, intervalSec ?? selectedSeconds);
+
+        currentStartedAt = param;   // param = startedAt timestamp
+        currentInterval = intervalSec;
+        startCountdown(param, intervalSec);
+
+    } else if (state === "paused") {
+        btnResume.classList.remove("hidden");
+        btnStop.classList.remove("hidden");
+        statusDot.className = "status-dot paused";
+        countdownLabel.textContent = "Paused";
+
+        // Show frozen remaining time
+        const remaining = param; // param = remaining seconds
+        displayCountdown(remaining, intervalSec);
+        setRingProgress(remaining / intervalSec);
+
     } else {
-        actionBtn.classList.remove("running");
-        actionBtnIcon.textContent = "▶";
-        actionBtnText.textContent = "Start Refresh";
-        statusDot.classList.remove("active");
+        // stopped
+        btnStart.classList.remove("hidden");
+        statusDot.className = "status-dot";
         countdownLabel.textContent = "Not running";
-        stopCountdown();
         countdownNumber.textContent = "--";
         countdownUnit.textContent = "sec";
         setRingProgress(0);
@@ -190,59 +256,47 @@ function setRunningUI(running, startedAt, intervalSec) {
 //  Countdown Ring
 // ─────────────────────────────────────────────
 function startCountdown(startedAt, intervalSec) {
-    stopCountdown();
-
     function tick() {
         const elapsed = (Date.now() - startedAt) / 1000;
         const cyclePos = elapsed % intervalSec;
         const remaining = intervalSec - cyclePos;
-        const progress = cyclePos / intervalSec;
-
-        if (remaining >= 60) {
-            countdownNumber.textContent = Math.ceil(remaining / 60);
-            countdownUnit.textContent = "min";
-        } else {
-            countdownNumber.textContent = Math.ceil(remaining);
-            countdownUnit.textContent = "sec";
-        }
-
-        setRingProgress(progress);
+        displayCountdown(remaining, intervalSec);
+        setRingProgress(cyclePos / intervalSec);
     }
-
     tick();
     countdownTimer = setInterval(tick, 500);
 }
 
 function stopCountdown() {
-    if (countdownTimer) {
-        clearInterval(countdownTimer);
-        countdownTimer = null;
+    if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+}
+
+function displayCountdown(remaining, intervalSec) {
+    if (remaining >= 60) {
+        countdownNumber.textContent = Math.ceil(remaining / 60);
+        countdownUnit.textContent = "min";
+    } else {
+        countdownNumber.textContent = Math.ceil(remaining);
+        countdownUnit.textContent = "sec";
     }
 }
 
 function setRingProgress(progress) {
-    // progress: 0 = empty, 1 = full
-    const offset = RING_CIRCUMFERENCE * (1 - progress);
-    ringFill.style.strokeDashoffset = offset;
+    ringFill.style.strokeDashoffset = RING_CIRCUMFERENCE * (1 - Math.min(Math.max(progress, 0), 1));
 }
 
 // ─────────────────────────────────────────────
-//  Helpers
+//  Footer — last refreshed
 // ─────────────────────────────────────────────
-function setSelectedInterval(sec) {
-    selectedSeconds = sec;
-}
-
-function updateLastRefreshed(timestamp) {
-    const diff = Math.round((Date.now() - timestamp) / 1000);
+function updateLastRefreshed(ts) {
+    const diff = Math.round((Date.now() - ts) / 1000);
     if (diff < 5) lastRefreshed.textContent = "Last refreshed: just now";
     else if (diff < 60) lastRefreshed.textContent = `Last refreshed: ${diff}s ago`;
     else lastRefreshed.textContent = `Last refreshed: ${Math.round(diff / 60)}m ago`;
 }
 
-// Poll for lastRefreshedAt so footer updates in real-time while popup is open
 setInterval(() => {
-    chrome.storage.local.get(["lastRefreshedAt"], (data) => {
-        if (data?.lastRefreshedAt) updateLastRefreshed(data.lastRefreshedAt);
+    chrome.storage.local.get(["lastRefreshedAt"], (d) => {
+        if (d?.lastRefreshedAt) updateLastRefreshed(d.lastRefreshedAt);
     });
 }, 2000);

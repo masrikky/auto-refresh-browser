@@ -7,6 +7,16 @@ This project adheres to [Semantic Versioning](https://semver.org/) and
 
 ---
 
+## [1.1.0] — 2026-03-09
+
+### Added
+- **Pause / Resume** — freeze the countdown without losing your place; the remaining time is stored and the alarm resumes from exactly where it left off
+- **Badge indicator** — the extension toolbar icon shows `ON` (green) when running, `||` (amber) when paused, and is empty when stopped
+- **Skip active tab** — pill toggle in the popup; when enabled, the currently focused tab is excluded from refresh (useful in All Tabs mode so your reading is never interrupted)
+- Amber pulsing status dot in popup header for the paused state
+
+---
+
 ## [1.0.1] — 2026-03-09
 
 ### Changed
