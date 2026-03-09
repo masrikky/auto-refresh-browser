@@ -7,6 +7,17 @@ This project adheres to [Semantic Versioning](https://semver.org/) and
 
 ---
 
+## [1.0.1] — 2026-03-09
+
+### Changed
+- Added **author footer** to the popup with name "masrikky" and three icon links:
+  - 🌐 Personal website — [rikky.my.id](https://rikky.my.id)
+  - 🐙 GitHub — [github.com/masrikky](https://github.com/masrikky)
+  - 🔵 Google Developer — [g.dev/masrikky](https://g.dev/masrikky)
+- Icon buttons styled with per-platform hover accent colours
+
+---
+
 ## [1.0.0] — 2026-03-09
 
 ### 🎉 Initial Release

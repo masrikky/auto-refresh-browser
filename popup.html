@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -9,6 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="popup.css" />
 </head>
+
 <body>
   <div class="container">
 
@@ -16,7 +18,9 @@
     <header class="header">
       <div class="header-icon">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z" fill="currentColor"/>
+          <path
+            d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"
+            fill="currentColor" />
         </svg>
       </div>
       <div class="header-text">
@@ -41,14 +45,7 @@
     <section class="section">
       <label class="section-label">Custom Interval</label>
       <div class="custom-input-row">
-        <input
-          type="number"
-          id="customValue"
-          class="custom-input"
-          min="1"
-          max="9999"
-          placeholder="Enter value"
-        />
+        <input type="number" id="customValue" class="custom-input" min="1" max="9999" placeholder="Enter value" />
         <div class="unit-toggle" id="unitToggle">
           <button class="unit-btn active" data-unit="seconds" id="unitSec">sec</button>
           <button class="unit-btn" data-unit="minutes" id="unitMin">min</button>
@@ -61,11 +58,16 @@
       <label class="section-label">Refresh Mode</label>
       <div class="mode-toggle" id="modeToggle">
         <button class="mode-btn active" data-mode="current" id="modeCurrent">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 18h12v-2H3v2zm0-5h12v-2H3v2zm0-7v2h12V6H3zm14 9.5L22.5 12 17 8.5v9z"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M3 18h12v-2H3v2zm0-5h12v-2H3v2zm0-7v2h12V6H3zm14 9.5L22.5 12 17 8.5v9z" />
+          </svg>
           Current Tab
         </button>
         <button class="mode-btn" data-mode="all" id="modeAll">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h18V4H4c-1.1 0-2 .9-2 2v11H0v3h14v-3H4V6zm19 2h-6c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h6c.55 0 1-.45 1-1V9c0-.55-.45-1-1-1zm-1 9h-4v-7h4v7z"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <path
+              d="M4 6h18V4H4c-1.1 0-2 .9-2 2v11H0v3h14v-3H4V6zm19 2h-6c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h6c.55 0 1-.45 1-1V9c0-.55-.45-1-1-1zm-1 9h-4v-7h4v7z" />
+          </svg>
           All Tabs
         </button>
       </div>
@@ -75,8 +77,8 @@
     <div class="countdown-display" id="countdownDisplay">
       <div class="countdown-ring">
         <svg class="ring-svg" viewBox="0 0 80 80">
-          <circle class="ring-track" cx="40" cy="40" r="34"/>
-          <circle class="ring-fill" id="ringFill" cx="40" cy="40" r="34"/>
+          <circle class="ring-track" cx="40" cy="40" r="34" />
+          <circle class="ring-fill" id="ringFill" cx="40" cy="40" r="34" />
         </svg>
         <div class="countdown-inner">
           <span class="countdown-number" id="countdownNumber">--</span>
@@ -95,10 +97,43 @@
     <!-- Footer -->
     <footer class="footer">
       <span id="lastRefreshed">Never refreshed</span>
+
+      <!-- Author -->
+      <div class="author-row">
+        <span class="author-label">by <strong>masrikky</strong></span>
+        <div class="author-links">
+
+          <!-- Personal Website -->
+          <a href="https://rikky.my.id" target="_blank" title="rikky.my.id" class="author-link" id="linkWebsite">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
+            </svg>
+          </a>
+
+          <!-- GitHub -->
+          <a href="https://github.com/masrikky" target="_blank" title="GitHub" class="author-link" id="linkGithub">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
+            </svg>
+          </a>
+
+          <!-- Google Developer -->
+          <a href="https://g.dev/masrikky" target="_blank" title="Google Developer" class="author-link" id="linkGDev">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M12.545 10.239v3.821h5.445c-.712 2.315-2.647 3.972-5.445 3.972a6.033 6.033 0 110-12.064c1.498 0 2.866.549 3.921 1.453l2.814-2.814A9.969 9.969 0 0012.545 2C7.021 2 2.543 6.477 2.543 12s4.478 10 10.002 10c8.396 0 10.249-7.85 9.426-11.748l-9.426-.013z" />
+            </svg>
+          </a>
+
+        </div>
+      </div>
     </footer>
 
   </div>
 
   <script src="popup.js"></script>
 </body>
+
 </html>
