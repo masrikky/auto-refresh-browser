@@ -1,10 +1,17 @@
 /**
- * background.js — Service Worker (v1.1.0)
+ * background.js — Service Worker (v1.2.0)
+ *
+ * Cross-browser (Chrome + Firefox) compatible.
+ *
+ * Key change for Firefox: Firefox clamps chrome.alarms periodInMinutes to a
+ * minimum of 1 minute, so 30s/60s presets would break. Instead we use
+ * ONE-SHOT alarms that are re-scheduled after each fire — both browsers
+ * allow sub-minute delayInMinutes for one-shot alarms.
  *
  * Features:
- *  - Alarm-based auto-refresh (survives popup close)
+ *  - One-shot alarm pattern (sub-minute intervals on Chrome & Firefox)
  *  - Pause / Resume (preserves remaining time)
- *  - Skip active tab (All Tabs mode skips the currently focused tab)
+ *  - Skip active tab (All Tabs mode skips focused tab)
  *  - Badge indicator: "ON" (running), "||" (paused), "" (stopped)
  */
 
@@ -26,6 +33,20 @@ function setBadge(state) {
     default:
       chrome.action.setBadgeText({ text: "" });
   }
+}
+
+// ─────────────────────────────────────────────
+//  Schedule a one-shot alarm (cross-browser)
+//  Firefox: supports sub-minute delayInMinutes for one-shot alarms
+//  Chrome: no minimum delay for one-shot alarms
+// ─────────────────────────────────────────────
+function scheduleAlarm(delaySeconds) {
+  chrome.alarms.clear(ALARM_NAME, () => {
+    chrome.alarms.create(ALARM_NAME, {
+      delayInMinutes: delaySeconds / 60,
+      // No periodInMinutes — we re-schedule manually after each fire
+    });
+  });
 }
 
 // ─────────────────────────────────────────────
@@ -60,10 +81,11 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
     case "getState":
       chrome.storage.local.get(
-        ["isRunning", "isPaused", "intervalSeconds", "mode", "skipActive", "startedAt", "pausedRemaining", "lastRefreshedAt"],
+        ["isRunning", "isPaused", "intervalSeconds", "mode", "skipActive",
+          "startedAt", "pausedRemaining", "lastRefreshedAt"],
         (data) => sendResponse(data)
       );
-      return true; // async
+      return true; // async response
   }
 });
 
@@ -71,24 +93,16 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 //  Start
 // ─────────────────────────────────────────────
 function startRefresh(intervalSeconds, mode, skipActive) {
-  const periodInMinutes = intervalSeconds / 60;
-
-  chrome.alarms.clear(ALARM_NAME, () => {
-    chrome.alarms.create(ALARM_NAME, {
-      delayInMinutes: periodInMinutes,
-      periodInMinutes: periodInMinutes,
-    });
-
-    chrome.storage.local.set({
-      isRunning: true,
-      isPaused: false,
-      intervalSeconds,
-      mode,
-      skipActive: skipActive ?? false,
-      startedAt: Date.now(),
-      pausedRemaining: null,
-    });
-
+  chrome.storage.local.set({
+    isRunning: true,
+    isPaused: false,
+    intervalSeconds,
+    mode,
+    skipActive: skipActive ?? false,
+    startedAt: Date.now(),
+    pausedRemaining: null,
+  }, () => {
+    scheduleAlarm(intervalSeconds);
     setBadge("running");
   });
 }
@@ -118,66 +132,57 @@ function pauseRefresh() {
 }
 
 // ─────────────────────────────────────────────
-//  Resume — restore alarm from remaining time
+//  Resume — one-shot alarm from remaining time
 // ─────────────────────────────────────────────
 function resumeRefresh() {
   chrome.storage.local.get(["pausedRemaining", "intervalSeconds"], (data) => {
     const remaining = data.pausedRemaining ?? data.intervalSeconds ?? 30;
-    const intervalSeconds = data.intervalSeconds ?? 30;
-    const periodInMinutes = intervalSeconds / 60;
+    const intervalSec = data.intervalSeconds ?? 30;
+    const newStartedAt = Date.now() - (intervalSec - remaining) * 1000;
 
-    // Adjust startedAt so the popup countdown interpolation stays accurate
-    const newStartedAt = Date.now() - (intervalSeconds - remaining) * 1000;
-
-    chrome.alarms.clear(ALARM_NAME, () => {
-      chrome.alarms.create(ALARM_NAME, {
-        delayInMinutes: remaining / 60,
-        periodInMinutes: periodInMinutes,
-      });
-
-      chrome.storage.local.set({
-        isPaused: false,
-        pausedRemaining: null,
-        startedAt: newStartedAt,
-      });
-
+    chrome.storage.local.set({
+      isPaused: false,
+      pausedRemaining: null,
+      startedAt: newStartedAt,
+    }, () => {
+      scheduleAlarm(remaining);
       setBadge("running");
     });
   });
 }
 
 // ─────────────────────────────────────────────
-//  Alarm handler — performs the actual refresh
+//  Alarm handler — refresh tabs, then re-schedule
 // ─────────────────────────────────────────────
 chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name !== ALARM_NAME) return;
 
-  const data = await chrome.storage.local.get(["isRunning", "isPaused", "mode", "skipActive"]);
+  const data = await chrome.storage.local.get(
+    ["isRunning", "isPaused", "mode", "skipActive", "intervalSeconds"]
+  );
   if (!data.isRunning || data.isPaused) return;
 
-  // Get the currently focused active tab so we can optionally skip it
   const [focusedTab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
   if (data.mode === "all") {
     const tabs = await chrome.tabs.query({});
     for (const tab of tabs) {
       if (!tab.id) continue;
-      if (!tab.url || tab.url.startsWith("chrome://") || tab.url.startsWith("chrome-extension://")) continue;
-      // Skip active tab if the option is enabled
+      if (!tab.url || tab.url.startsWith("chrome://") || tab.url.startsWith("chrome-extension://")
+        || tab.url.startsWith("about:") || tab.url.startsWith("moz-extension://")) continue;
       if (data.skipActive && focusedTab && tab.id === focusedTab.id) continue;
       chrome.tabs.reload(tab.id);
     }
   } else {
-    // Current tab mode — skip if skipActive is on and tab is active
-    if (data.skipActive && focusedTab?.active) {
-      // Reschedule for next cycle but don't reload
-    } else if (focusedTab?.id) {
+    if (!(data.skipActive && focusedTab?.active) && focusedTab?.id) {
       chrome.tabs.reload(focusedTab.id);
     }
   }
 
-  // Reset startedAt so countdown stays aligned after each real refresh
-  chrome.storage.local.set({ lastRefreshedAt: Date.now(), startedAt: Date.now() });
+  const now = Date.now();
+  // Reset startedAt and re-schedule the next one-shot alarm
+  chrome.storage.local.set({ lastRefreshedAt: now, startedAt: now });
+  scheduleAlarm(data.intervalSeconds ?? 30);
 });
 
 // ─────────────────────────────────────────────

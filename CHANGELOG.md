@@ -7,6 +7,22 @@ This project adheres to [Semantic Versioning](https://semver.org/) and
 
 ---
 
+## [1.2.0] — 2026-03-10
+
+### Added
+- **Firefox support** — Extension now works on Firefox 109+ (Manifest V3)
+  - Added `browser_specific_settings.gecko` to `manifest.json` with extension ID and minimum Firefox version
+- **One-shot alarm pattern** — Replaced periodic `chrome.alarms` (`periodInMinutes`) with one-shot alarms that re-schedule after each fire
+  - Root cause: Firefox clamps `periodInMinutes` to a **minimum of 1 minute**, breaking 30s/60s presets
+  - One-shot alarms allow sub-minute `delayInMinutes` on both Chrome and Firefox
+- Skips `about:` and `moz-extension://` URLs (in addition to `chrome://`) when refreshing all tabs on Firefox
+
+### Changed
+- Removed `"type": "module"` from background service worker declaration for broader Firefox MV3 compatibility
+- Updated README with dual Chrome/Firefox installation guides and browser compatibility badges
+
+---
+
 ## [1.1.0] — 2026-03-09
 
 ### Added

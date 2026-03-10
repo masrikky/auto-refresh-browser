@@ -1,10 +1,11 @@
 # Auto Refresh Browser
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-green.svg)](https://developer.chrome.com/docs/extensions/)
-[![Manifest V3](https://img.shields.io/badge/Manifest-V3-orange.svg)](https://developer.chrome.com/docs/extensions/mv3/intro/)
+[![Chrome](https://img.shields.io/badge/Chrome-102+-green.svg)](https://developer.chrome.com/docs/extensions/)
+[![Firefox](https://img.shields.io/badge/Firefox-109+-orange.svg)](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions)
+[![Manifest V3](https://img.shields.io/badge/Manifest-V3-blue.svg)](https://developer.chrome.com/docs/extensions/mv3/intro/)
 
-> **Keep your browser sessions alive.** Auto Refresh Browser is a Chrome extension that automatically reloads tabs at configurable intervals — preventing idle timeouts and session logouts on any website.
+> **Keep your browser sessions alive.** Auto Refresh Browser is a cross-browser extension (Chrome & Firefox) that automatically reloads tabs at configurable intervals — preventing idle timeouts and session logouts on any website.
 
 ---
 
@@ -14,32 +15,40 @@
 - 🕐 **Custom interval** — Enter any value in seconds or minutes
 - 🗂️ **Two refresh modes**
   - **Current Tab** — Refreshes only the tab you're viewing
-  - **All Tabs** — Refreshes every open tab across all windows (skips `chrome://` pages)
-- 🔄 **Persistent state** — Runs in the background via `chrome.alarms`; survives popup close and browser restart
+  - **All Tabs** — Refreshes every open tab across all windows (skips browser-internal pages)
+- ⏸ **Pause / Resume** — Freeze the countdown without losing your place
+- 🔄 **Persistent state** — Runs in the background via `chrome.alarms`; survives popup close
 - 📊 **Live countdown ring** — Animated circular progress showing time until next refresh
-- 🟢 **Status indicator** — Pulsing dot shows at a glance whether refresh is active
+- 🟢 **Status indicator** — Pulsing dot + toolbar badge (`ON` / `||`) at a glance
+- 👁 **Skip active tab** — Don't refresh the tab you're currently reading
+- 🦊 **Cross-browser** — Works on Chrome 102+ and Firefox 109+
 
 ---
 
 ## Installation (Developer Mode)
 
-> The extension is not yet published to the Chrome Web Store. Follow these steps to load it manually:
+> The extension is not yet published to the Chrome Web Store or Firefox Add-ons. Follow the steps below to load it manually.
 
-1. Download or clone this repository:
-   ```bash
-   git clone https://github.com/masrikky/auto-refresh-browser.git
-   ```
+First, clone the repository:
+```bash
+git clone https://github.com/masrikky/auto-refresh-browser.git
+```
 
-2. Open Chrome and navigate to:
-   ```
-   chrome://extensions/
-   ```
+### 🟢 Chrome / Edge / Brave
 
-3. Enable **Developer mode** (toggle in the top-right corner).
+1. Navigate to `chrome://extensions/`
+2. Enable **Developer mode** (toggle in the top-right corner)
+3. Click **Load unpacked** → select the `auto-refresh-browser` folder
+4. The 🔄 icon will appear in your toolbar — pin it for easy access
 
-4. Click **Load unpacked** and select the `auto-refresh-browser` folder.
+### 🦊 Firefox
 
-5. The 🔄 icon will appear in your Chrome toolbar. Pin it for easy access.
+1. Navigate to `about:debugging#/runtime/this-firefox`
+2. Click **Load Temporary Add-on…**
+3. Select the `manifest.json` file inside the `auto-refresh-browser` folder
+4. The 🔄 icon appears in your toolbar
+
+> **Note:** Firefox temporary add-ons are removed on browser restart. For a permanent install, the extension must be signed via [AMO](https://addons.mozilla.org/) or Firefox must be set to allow unsigned extensions (`xpinstall.signatures.required = false` in `about:config` — developer builds only).
 
 ---
 
@@ -87,8 +96,8 @@ popup.js  ◄── chrome.storage.local ◄──────────┘
 (live countdown synced via startedAt timestamp)
 ```
 
-- **`background.js`** — Manifest V3 service worker. Creates a `chrome.alarm` with the configured period. On each alarm, reloads the target tab(s). State is persisted to `chrome.storage.local` so the countdown resumes correctly if the popup is reopened.
-- **`popup.js`** — Reads state from storage on open, renders the live countdown ring by computing elapsed time against `startedAt`, and passes start/stop commands to the background worker.
+- **`background.js`** — Manifest V3 service worker. Uses **one-shot alarms** (re-scheduled after each fire) instead of periodic alarms — this ensures sub-minute intervals (30s, 60s) work reliably on both Chrome and Firefox. Firefox clamps `periodInMinutes` to ≥ 1 min, but allows fractional `delayInMinutes` for one-shot alarms.
+- **`popup.js`** — Reads state from storage on open, renders the live countdown ring by computing elapsed time against `startedAt`, and passes start/stop/pause/resume commands to the background worker.
 
 ---
 
